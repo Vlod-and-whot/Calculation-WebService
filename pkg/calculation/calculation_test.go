@@ -3,7 +3,7 @@ package calculation
 import (
 	"testing"
 
-	"github.com/github.com/Vlod-and-whot/Calculation-WebService/internal/application/custom_errors"
+	"github.com/Vlod-and-whot/Calculation-WebService/internal/application/custom_errors"
 )
 
 func TestCalc(t *testing.T) {
