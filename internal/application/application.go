@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/onel1nfavxx/YANDEX-GO_CALCULATOR_PROJECT/custom_errors"
-	"github.com/onel1nfavxx/YANDEX-GO_CALCULATOR_PROJECT/pkg/calculation"
+	"github.com/github.com/Vlod-and-whot/Calculation-WebService/internal/application/custom_errors"
+	"github.com/github.com/Vlod-and-whot/Calculation-WebService/internal/application/pkg/calculation"
 )
 
 type Config struct {
