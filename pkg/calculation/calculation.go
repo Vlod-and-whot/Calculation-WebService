@@ -7,111 +7,104 @@ import (
 	"github.com/github.com/Vlod-and-whot/Calculation-WebService/internal/application/custom_errors"
 )
 
-type Operator struct {
-	symbol     string
-	precedence int
-	assoc      string
-}
-
-var operators = map[string]Operator{
-	"+": {"*", 1, "L"},
-	"-": {"*", 1, "L"},
-	"*": {"*", 2, "L"},
-	"/": {"*", 2, "L"},
-}
-
-func precedence(op string) int {
-	if operator, exists := operators[op]; exists {
-		return operator.precedence
-	}
-	return -1
-}
-
 func Calc(expression string) (float64, error) {
-	output := []string{}
-	stack := []string{}
-	numStack := []float64{}
+	expression = strings.ReplaceAll(expression, " ", "")
 
-	tokens := strings.Split(expression, "")
+	if expression == "" {
+		return 0, errors.New("пустое выражение")
+	}
 
-	for _, token := range tokens {
-		if num, err := strconv.ParseFloat(token, 64); err == nil {
-			numStack = append(numStack, num)
-		} else if token == "(" {
-			stack = append(stack, token)
-		} else if token == ")" {
-			for len(stack) > 0 && stack[len(stack)-1] != "(" {
-				output = append(output, stack[len(stack)-1])
-				stack = stack[:len(stack)-1]
-			}
-			stack = stack[:len(stack)-1]
-		} else {
-			for len(stack) > 0 && precedence(stack[len(stack)-1]) >= precedence(token) {
-				output = append(output, stack[len(stack)-1])
-				stack = stack[:len(stack)-1]
-			}
-			stack = append(stack, token)
+	var numbers []float64
+	var ops []rune
+
+	calculate := func() error {
+		if len(numbers) < 2 || len(ops) == 0 {
+			return errors.New("ошибка - недостаточно данных для вычисления")
 		}
-	}
+		b := numbers[len(numbers)-1]
+		a := numbers[len(numbers)-2]
+		op := ops[len(ops)-1]
 
-	for len(stack) > 0 {
-		output = append(output, stack[len(stack)-1])
-		stack = stack[:len(stack)-1]
-	}
+		numbers = numbers[:len(numbers)-2]
+		ops = ops[:len(ops)-1]
 
-	for _, token := range output {
-		switch token {
-		case "+":
-			if len(numStack) < 2 {
-				return 0, custom_errors.ErrInvalidExpression
-			}
-			b := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
-			a := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
-			numStack = append(numStack, a+b)
-		case "-":
-			if len(numStack) < 2 {
-				return 0, custom_errors.ErrInvalidExpression
-			}
-			b := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
-			a := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
-			numStack = append(numStack, a-b)
-		case "*":
-			if len(numStack) < 2 {
-				return 0, custom_errors.ErrInvalidExpression
-			}
-			b := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
-			a := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
-			numStack = append(numStack, a*b)
-		case "/":
-			if len(numStack) < 2 {
-				return 0, custom_errors.ErrInvalidExpression
-			}
-			b := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
-			a := numStack[len(numStack)-1]
-			numStack = numStack[:len(numStack)-1]
+		var result float64
+		switch op {
+		case '+':
+			result = a + b
+		case '-':
+			result = a - b
+		case '*':
+			result = a * b
+		case '/':
 			if b == 0 {
-				return 0, custom_errors.ErrDivisionByZero
+				return errors.New("ошибка - деление на ноль")
 			}
-			numStack = append(numStack, a/b)
+			result = a / b
 		default:
-			num, err := strconv.ParseFloat(token, 64)
-			if err != nil {
-				return 0, custom_errors.ErrInvalidExpression
+			return errors.New("ошибка - неизвестная операция")
+		}
+		numbers = append(numbers, result)
+		return nil
+	}
+
+	for i := 0; i < len(expression); i++ {
+		char := rune(expression[i])
+
+		if char >= '0' && char <= '9' {
+			start := i
+			for i < len(expression) && (expression[i] >= '0' && expression[i] <= '9' || expression[i] == '.') {
+				i++
 			}
-			numStack = append(numStack, num)
+			num, err := strconv.ParseFloat(expression[start:i], 64)
+			if err != nil {
+				return 0, err
+			}
+			numbers = append(numbers, num)
+			i--
+		} else if char == '(' {
+			ops = append(ops, char)
+		} else if char == ')' {
+			for len(ops) > 0 && ops[len(ops)-1] != '(' {
+				if err := calculate(); err != nil {
+					return 0, err
+				}
+			}
+			if len(ops) == 0 {
+				return 0, errors.New("несоответствующая скобка")
+			}
+			ops = ops[:len(ops)-1]
+		} else if char == '+' || char == '-' || char == '*' || char == '/' {
+			for len(ops) > 0 && precedence(ops[len(ops)-1]) >= precedence(char) {
+				if err := calculate(); err != nil {
+					return 0, err
+				}
+			}
+			ops = append(ops, char)
+		} else {
+			return 0, errors.New("недопустимый символ")
 		}
 	}
 
-	if len(numStack) != 1 {
-		return 0, custom_errors.ErrInvalidExpression
+	for len(ops) > 0 {
+		if err := calculate(); err != nil {
+			return 0, err
+		}
 	}
 
-	return numStack[0], nil
+	if len(numbers) != 1 {
+		return 0, errors.New("ошибка в выражении")
+	}
+
+	return numbers[0], nil
+}
+
+func precedence(op rune) int {
+	switch op {
+	case '+', '-':
+		return 1
+	case '*', '/':
+		return 2
+	}
+	return 0
 }
