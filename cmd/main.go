@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/onel1nfavxx/YANDEX-GO_CALCULATOR_PROJECT/internal/application"
+	"github.com/Vlod-and-whot/Calculation-WebService/internal/application"
 )
 
 func main() {
