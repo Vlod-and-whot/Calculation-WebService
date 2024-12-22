@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/onel1nfavxx/YANDEX-GO_CALCULATOR_PROJECT/custom_errors"
+	"github.com/github.com/Vlod-and-whot/Calculation-WebService/internal/application/custom_errors"
 )
 
 type Operator struct {
